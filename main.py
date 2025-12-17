@@ -128,10 +128,9 @@ questions = {
 }
 ## End OF Dictionaries
 
-## Main
 #t.me/Health_Survey_SF_36_bot
-##@Health_Survey_SF_36_bot
-# 8504861664:AAFktaCNuai1tAUxvZhxwrsSWo4p6Vroa3s
+##HealthSurvey_SF_36_bot
+# 8096191207:AAEDPwIqTluvKPKWC-iICRKdXybE9cyrfvY
 
 ###previous
 ###bot = telebot.TeleBot('2083742394:AAEyjXFgdSXxnXOWaC3rVyfcRawCQcqQcvs')
@@ -141,7 +140,7 @@ from telebot import types
 import pandas as pd
 import numpy as np
 
-bot = telebot.TeleBot('2083742394:AAEyjXFgdSXxnXOWaC3rVyfcRawCQcqQcvs')
+bot = telebot.TeleBot('8096191207:AAEDPwIqTluvKPKWC-iICRKdXybE9cyrfvY')
 
 user_answers = {}
 
