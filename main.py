@@ -138,8 +138,7 @@ user_names = {}
 
 from telebot import TeleBot
 import os
-TOKEN = os.getenv("BOT_TOKEN")
-bot = TeleBot(TOKEN)
+
 
 bot = telebot.TeleBot(TOKEN)
 
