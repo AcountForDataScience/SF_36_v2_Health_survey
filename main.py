@@ -1,3 +1,5 @@
+import os
+import telebot
 
 scale_names = {
     "PF": "Фізичне функціонування",
