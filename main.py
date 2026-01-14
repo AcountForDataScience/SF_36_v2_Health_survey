@@ -126,23 +126,28 @@ questions = {
     "Q11a": {"text": "Мені здається, що моє здоров’я погіршується:",
              "min": 1, "max": 5, "reverse": False, "variant": "expectations"}
 }
+
+TOKEN = '8520830685:AAGvGEkMvKkecglIwAcfgVORvGYlq7Vd81w'
+SHEET_ID = '12LRWieZfu0jYaErqehTYbL4BdkAzPgdJ0v0emMYH8Bc'
+CREDENTIALS_FILE = 'credentials.json'
+KEY_FILE_DRIVE_ID = '1BXsZIO1fdwADwBTA1kilhKW4pVWAdlZX'
+
+user_answers = {}
+user_answers_text = {}
+user_names = {}
 ## End OF Dictionaries
 
+
 #t.me/Health_Survey_SF_36_bot
+## Health SurveySF-36
 ##HealthSurvey_SF_36_bot
 # 8096191207:AAEDPwIqTluvKPKWC-iICRKdXybE9cyrfvY
 
 ###previous
 ###bot = telebot.TeleBot('2083742394:AAEyjXFgdSXxnXOWaC3rVyfcRawCQcqQcvs')
-###@skrart_bot
-import telebot
-from telebot import types
-import pandas as pd
-import numpy as np
+###@HealthSurvey_SF_36_bot
 
-bot = telebot.TeleBot('8096191207:AAEDPwIqTluvKPKWC-iICRKdXybE9cyrfvY')
-
-user_answers = {}
+bot = telebot.TeleBot(TOKEN)
 
 for q_key, q_data in questions.items():
     variant = q_data.get("variant")
@@ -153,9 +158,45 @@ for q_key, q_data in questions.items():
     else:
         q_data['options'] = []
 
+def download_credentials():
+    if not os.path.exists(CREDENTIALS_FILE):
+        url = f'https://drive.google.com/uc?export=download&id={KEY_FILE_DRIVE_ID}'
+        try:
+            urllib.request.urlretrieve(url, CREDENTIALS_FILE)
+        except Exception:
+            pass
+
+download_credentials()
+
+def save_full_data(chat_id, raw_answers_text, user_name):
+    if not os.path.exists(CREDENTIALS_FILE):
+        return
+
+    try:
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, scope)
+        client = gspread.authorize(creds)
+        sheet = client.open_by_key(SHEET_ID).sheet1
+        q_keys = list(questions.keys())
+        existing_data = sheet.col_values(1)
+        if not existing_data:
+            header_row = ["No", "Date", "Name"] + q_keys
+            sheet.append_row(header_row)
+            next_id = 1
+        else:
+            next_id = len(existing_data)
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        row = [next_id, current_time, user_name]
+        for q in q_keys:
+            val = raw_answers_text.get(q)
+            row.append(val if val is not None else "")
+        sheet.append_row(row)
+
+    except Exception as e:
+        print(f"Error saving: {e}")
+
 def transform_score(x, q):
     q_info = questions[q]
-
     if q_info["reverse"]:
         return ((q_info["max"] - x) / (q_info["max"] - q_info["min"])) * 100
     else:
@@ -180,7 +221,16 @@ def calculate_scales(answers):
 def send_welcome(message):
     chat_id = message.chat.id
     user_answers[chat_id] = {}
-    bot.send_message(chat_id, "Вітаю!\n\nРозпочинаємо опитування SF-36. \n\nБудь ласка, обирайте варіанти з меню.")
+    user_answers_text[chat_id] = {}
+    user_names[chat_id] = ""
+    msg = bot.send_message(chat_id, "Вітаю! Будь ласка, введіть Ваше ім'я та прізвище:")
+    bot.register_next_step_handler(msg, process_name)
+
+def process_name(message):
+    chat_id = message.chat.id
+    name = message.text
+    user_names[chat_id] = name
+    bot.send_message(chat_id, f"Дякую, {name}. Розпочинаємо опитування SF-36.")
     ask_next_question(chat_id)
 
 @bot.message_handler(func=lambda message: message.text == "Повтор")
@@ -190,11 +240,9 @@ def repeat_survey(message):
 def ask_next_question(chat_id):
     answers = user_answers.get(chat_id, {})
     remaining = [q for q in questions if q not in answers]
-
     if remaining:
         q = remaining[0]
         q_info = questions[q]
-
         markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
         for option in q_info['options']:
             markup.add(option)
@@ -211,7 +259,6 @@ def process_answer(message, q):
     if text == "Повтор":
         repeat_survey(message)
         return
-
     q_info = questions[q]
 
     if text not in q_info['options']:
@@ -220,20 +267,25 @@ def process_answer(message, q):
         return
 
     val = q_info['options'].index(text) + q_info['min']
-
     if chat_id not in user_answers:
         user_answers[chat_id] = {}
+    if chat_id not in user_answers_text:
+        user_answers_text[chat_id] = {}
 
     user_answers[chat_id][q] = val
+    user_answers_text[chat_id][q] = text
     ask_next_question(chat_id)
 
 def finalize(chat_id):
     if chat_id not in user_answers:
         return
 
-    results = calculate_scales(user_answers[chat_id])
-
-    response_text = "📊 *Ваші результати SF-36:*\n(0 - найгірше, 100 - найкраще)\n\n"
+    raw_answers = user_answers[chat_id]
+    raw_texts = user_answers_text.get(chat_id, {})
+    name = user_names.get(chat_id, "Unknown")
+    results = calculate_scales(raw_answers)
+    save_full_data(chat_id, raw_texts, name)
+    response_text = f"📊*{name}*, ваші результати SF-36:\n(0 - найгірше, 100 - найкраще)\n\n"
 
     for scale, value in results.items():
         full_name = scale_names.get(scale, scale)
@@ -241,10 +293,11 @@ def finalize(chat_id):
             response_text += f"▫️ {full_name}: *{value}*\n"
         else:
             response_text += f"▫️ {full_name}: _недостатньо даних_\n"
-    #інформацію для відгуків
     response_text += "\nЗ усіх питань та за додатковою інформацією звертайтесь: 093 544 34 61, test@gmail.com"
 
     del user_answers[chat_id]
+    del user_answers_text[chat_id]
+    del user_names[chat_id]
 
     markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
     markup.add("Повтор")
