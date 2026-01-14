@@ -127,7 +127,7 @@ questions = {
              "min": 1, "max": 5, "reverse": False, "variant": "expectations"}
 }
 
-TOKEN = '8520830685:AAGvGEkMvKkecglIwAcfgVORvGYlq7Vd81w'
+TOKEN = '8096191207:AAEDPwIqTluvKPKWC-iICRKdXybE9cyrfvY'
 SHEET_ID = '12LRWieZfu0jYaErqehTYbL4BdkAzPgdJ0v0emMYH8Bc'
 CREDENTIALS_FILE = 'credentials.json'
 KEY_FILE_DRIVE_ID = '1BXsZIO1fdwADwBTA1kilhKW4pVWAdlZX'
