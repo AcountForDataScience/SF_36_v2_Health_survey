@@ -285,7 +285,7 @@ def finalize(chat_id):
             response_text += f"▫️ {full_name}: *{value}*\n"
         else:
             response_text += f"▫️ {full_name}: _недостатньо даних_\n"
-    response_text += "\nЗ усіх питань та за додатковою інформацією звертайтесь: 093 544 34 61, centr.kalinovska@gmail.com"
+    response_text += "\nЗ усіх питань та за додатковою інформацією звертайтесь: +380 95 979 13 23, centr.kalinovska@gmail.com"
 
     del user_answers[chat_id]
     del user_answers_text[chat_id]
