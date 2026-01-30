@@ -1,6 +1,6 @@
-import telebot
-from telebot import TeleBot
 import os
+import telebot
+from telebot import types
 
 scale_names = {
     "PF": "Фізичне функціонування",
@@ -137,7 +137,8 @@ user_answers = {}
 user_answers_text = {}
 user_names = {}
 
-bot = telebot.TeleBot(TOKEN)
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+bot = telebot.TeleBot(BOT_TOKEN)
 
 for q_key, q_data in questions.items():
     variant = q_data.get("variant")
