@@ -1,9 +1,12 @@
+#centr.kalinovska@gmail.com
+
 import os
 import telebot
 from telebot import types
 import numpy as np
 import csv
 from datetime import datetime
+
 
 scale_names = {
     "PF": "Фізичне функціонування",
@@ -282,7 +285,7 @@ def finalize(chat_id):
             response_text += f"▫️ {full_name}: *{value}*\n"
         else:
             response_text += f"▫️ {full_name}: _недостатньо даних_\n"
-    response_text += "\nЗ усіх питань та за додатковою інформацією звертайтесь: 093 544 34 61, test@gmail.com"
+    response_text += "\nЗ усіх питань та за додатковою інформацією звертайтесь: 093 544 34 61, centr.kalinovska@gmail.com"
 
     del user_answers[chat_id]
     del user_answers_text[chat_id]
