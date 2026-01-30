@@ -137,7 +137,6 @@ user_answers = {}
 user_answers_text = {}
 user_names = {}
 
-
 bot = telebot.TeleBot(TOKEN)
 
 for q_key, q_data in questions.items():
