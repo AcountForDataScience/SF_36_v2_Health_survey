@@ -1,6 +1,9 @@
 import os
 import telebot
 from telebot import types
+import numpy as np
+import csv
+from datetime import datetime
 
 scale_names = {
     "PF": "Фізичне функціонування",
