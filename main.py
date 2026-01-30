@@ -1,5 +1,6 @@
-import os
 import telebot
+from telebot import TeleBot
+import os
 
 scale_names = {
     "PF": "Фізичне функціонування",
@@ -130,16 +131,11 @@ questions = {
 }
 
 TOKEN = '8096191207:AAEDPwIqTluvKPKWC-iICRKdXybE9cyrfvY'
-SHEET_ID = '12LRWieZfu0jYaErqehTYbL4BdkAzPgdJ0v0emMYH8Bc'
-CREDENTIALS_FILE = 'credentials.json'
-KEY_FILE_DRIVE_ID = '1BXsZIO1fdwADwBTA1kilhKW4pVWAdlZX'
+CSV_FILE = 'survey_results.csv'
 
 user_answers = {}
 user_answers_text = {}
 user_names = {}
-
-from telebot import TeleBot
-import os
 
 
 bot = telebot.TeleBot(TOKEN)
@@ -153,42 +149,34 @@ for q_key, q_data in questions.items():
     else:
         q_data['options'] = []
 
-def download_credentials():
-    if not os.path.exists(CREDENTIALS_FILE):
-        url = f'https://drive.google.com/uc?export=download&id={KEY_FILE_DRIVE_ID}'
-        try:
-            urllib.request.urlretrieve(url, CREDENTIALS_FILE)
-        except Exception:
-            pass
-
-download_credentials()
 
 def save_full_data(chat_id, raw_answers_text, user_name):
-    if not os.path.exists(CREDENTIALS_FILE):
-        return
-
     try:
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, scope)
-        client = gspread.authorize(creds)
-        sheet = client.open_by_key(SHEET_ID).sheet1
         q_keys = list(questions.keys())
-        existing_data = sheet.col_values(1)
-        if not existing_data:
-            header_row = ["No", "Date", "Name"] + q_keys
-            sheet.append_row(header_row)
-            next_id = 1
-        else:
-            next_id = len(existing_data)
+        file_exists = os.path.exists(CSV_FILE)
+
+        next_id = 1
+        if file_exists:
+            with open(CSV_FILE, 'r', encoding='utf-8') as f:
+                row_count = sum(1 for row in csv.reader(f))
+                next_id = row_count if row_count > 0 else 1
+
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         row = [next_id, current_time, user_name]
         for q in q_keys:
-            val = raw_answers_text.get(q)
-            row.append(val if val is not None else "")
-        sheet.append_row(row)
+            val = raw_answers_text.get(q, "")
+            row.append(val)
+        with open(CSV_FILE, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+
+            if not file_exists or os.stat(CSV_FILE).st_size == 0:
+                header_row = ["No", "Date", "Name"] + q_keys
+                writer.writerow(header_row)
+
+            writer.writerow(row)
 
     except Exception as e:
-        print(f"Error saving: {e}")
+        print(f"Error saving to CSV: {e}")
 
 def transform_score(x, q):
     q_info = questions[q]
@@ -278,8 +266,11 @@ def finalize(chat_id):
     raw_answers = user_answers[chat_id]
     raw_texts = user_answers_text.get(chat_id, {})
     name = user_names.get(chat_id, "Unknown")
+
     results = calculate_scales(raw_answers)
+
     save_full_data(chat_id, raw_texts, name)
+
     response_text = f"📊*{name}*, ваші результати SF-36:\n(0 - найгірше, 100 - найкраще)\n\n"
 
     for scale, value in results.items():
@@ -299,4 +290,5 @@ def finalize(chat_id):
 
     bot.send_message(chat_id, response_text, parse_mode="Markdown", reply_markup=markup)
 
-bot.infinity_polling()
+if __name__ == '__main__':
+    bot.infinity_polling()
